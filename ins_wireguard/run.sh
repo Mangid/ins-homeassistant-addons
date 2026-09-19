@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bashio
 set -e
 
-VERSION="0.2.0"
+VERSION="0.2.2"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"

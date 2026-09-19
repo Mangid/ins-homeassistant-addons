@@ -1,5 +1,5 @@
 name: "INS WireGuard Client"
-version: "0.2.1"
+version: "0.2.2"
 slug: "ins_wireguard"
 description: "WireGuard Client für den zentralen INS-Fernzugriff"
 startup: services
