@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-VERSION="0.3.0"
+VERSION="0.3.1"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"
@@ -8,7 +8,7 @@ bashio::log.info " INS-Energietechnik"
 bashio::log.info "=========================================="
 
 # ----------------------------------------------------------
-# Konfiguration
+# Konfiguration einlesen
 # ----------------------------------------------------------
 
 VPN_ADDRESS=$(bashio::config 'vpn_address')
@@ -72,6 +72,7 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
         bashio::log.error "LAN-Interface ${LAN_INTERFACE} wurde nicht gefunden."
         exit 1
     fi
+
 fi
 
 # ----------------------------------------------------------
@@ -103,9 +104,151 @@ bashio::log.info "MTU            : ${MTU}"
 bashio::log.info "Keepalive      : ${KEEPALIVE}"
 bashio::log.info "Subnet-Routing : ${SUBNET_ROUTING}"
 
+if [ "${SUBNET_ROUTING}" = "true" ]; then
+    bashio::log.info "Lokales Netz   : ${LOCAL_SUBNET}"
+    bashio::log.info "LAN-Interface  : ${LAN_INTERFACE}"
+fi
+
 # ----------------------------------------------------------
 # Vorhandenes wg0 entfernen
 # ----------------------------------------------------------
 
 if ip link show wg0 >/dev/null 2>&1; then
-    bashio::log.warning "
+    bashio::log.warning "wg0 existiert bereits und wird neu gestartet."
+    wg-quick down /etc/wireguard/wg0.conf || true
+fi
+
+# ----------------------------------------------------------
+# WireGuard starten
+# ----------------------------------------------------------
+
+bashio::log.info "=========================================="
+bashio::log.info "Starte WireGuard"
+bashio::log.info "=========================================="
+
+if wg-quick up /etc/wireguard/wg0.conf; then
+    bashio::log.info "WireGuard-Interface wg0 erfolgreich gestartet."
+else
+    bashio::log.error "WireGuard konnte nicht gestartet werden."
+    exit 1
+fi
+
+# ----------------------------------------------------------
+# Optionales Subnet-Routing
+# ----------------------------------------------------------
+
+if [ "${SUBNET_ROUTING}" = "true" ]; then
+
+    bashio::log.info "=========================================="
+    bashio::log.info "Aktiviere Subnet-Routing"
+    bashio::log.info "=========================================="
+
+    # IPv4 Forwarding aktivieren
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null
+
+    # Eventuell vorhandene identische Regeln entfernen
+    # Dadurch entstehen nach einem Neustart keine Duplikate.
+
+    iptables -D FORWARD \
+        -i wg0 \
+        -o "${LAN_INTERFACE}" \
+        -d "${LOCAL_SUBNET}" \
+        -j ACCEPT 2>/dev/null || true
+
+    iptables -D FORWARD \
+        -i "${LAN_INTERFACE}" \
+        -o wg0 \
+        -s "${LOCAL_SUBNET}" \
+        -m conntrack \
+        --ctstate ESTABLISHED,RELATED \
+        -j ACCEPT 2>/dev/null || true
+
+    iptables -t nat -D POSTROUTING \
+        -s 10.10.0.0/24 \
+        -d "${LOCAL_SUBNET}" \
+        -o "${LAN_INTERFACE}" \
+        -j MASQUERADE 2>/dev/null || true
+
+    # INS-VPN -> lokales Kundennetz
+
+    iptables -I FORWARD 1 \
+        -i wg0 \
+        -o "${LAN_INTERFACE}" \
+        -d "${LOCAL_SUBNET}" \
+        -j ACCEPT
+
+    # Antwortverkehr lokales Kundennetz -> INS-VPN
+
+    iptables -I FORWARD 1 \
+        -i "${LAN_INTERFACE}" \
+        -o wg0 \
+        -s "${LOCAL_SUBNET}" \
+        -m conntrack \
+        --ctstate ESTABLISHED,RELATED \
+        -j ACCEPT
+
+    # NAT
+    #
+    # Dadurch benötigen Geräte im Kundennetz keine eigene Route
+    # zurück zum INS-WireGuard-Netz.
+
+    iptables -t nat -I POSTROUTING 1 \
+        -s 10.10.0.0/24 \
+        -d "${LOCAL_SUBNET}" \
+        -o "${LAN_INTERFACE}" \
+        -j MASQUERADE
+
+    bashio::log.info "Subnet-Routing erfolgreich eingerichtet."
+
+fi
+
+# ----------------------------------------------------------
+# Status
+# ----------------------------------------------------------
+
+sleep 3
+
+bashio::log.info "=========================================="
+bashio::log.info "WireGuard Status"
+bashio::log.info "=========================================="
+
+wg show wg0 || true
+
+bashio::log.info "=========================================="
+bashio::log.info "Routing"
+bashio::log.info "=========================================="
+
+ip route show | grep -E 'wg0|10\.10\.' || true
+
+# ----------------------------------------------------------
+# Subnet-Routing Status
+# ----------------------------------------------------------
+
+if [ "${SUBNET_ROUTING}" = "true" ]; then
+
+    bashio::log.info "=========================================="
+    bashio::log.info "Subnet-Routing Status"
+    bashio::log.info "=========================================="
+
+    bashio::log.info "IPv4 Forwarding:"
+    sysctl net.ipv4.ip_forward || true
+
+    bashio::log.info "FORWARD Regeln:"
+    iptables -L FORWARD -n -v || true
+
+    bashio::log.info "NAT Regeln:"
+    iptables -t nat -L POSTROUTING -n -v || true
+
+fi
+
+bashio::log.info "=========================================="
+bashio::log.info "INS WireGuard Client läuft"
+bashio::log.info "=========================================="
+
+# ----------------------------------------------------------
+# Container aktiv halten
+# ----------------------------------------------------------
+
+while true; do
+    sleep 3600
+done
