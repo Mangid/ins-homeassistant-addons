@@ -1,42 +1,13 @@
-# INS WireGuard Client
-
-Home Assistant App für den zentralen Fernzugriff von INS-Energietechnik.
-
-## Funktion
-
-Die App verbindet eine Home-Assistant-Installation als WireGuard-Client mit dem zentralen INS-WireGuard-Server.
-
 ## Netzwerk
 
-Zentraler WireGuard-Server:
+Die App verbindet eine Home-Assistant-Installation mit einem
+zentralen WireGuard-Server.
 
-- Endpoint: `13.140.162.147:51820`
-- VPN-Netz: `10.10.0.0/24`
+Beispielkonfiguration:
 
-Jede Kundeninstallation erhält eine eigene WireGuard-IP.
+- VPN-Adresse: `10.100.0.10/32`
+- Endpoint: `vpn.example.com:51820`
+- VPN-Netz: `10.100.0.0/24`
 
-Beispiel:
-
-- INS Laptop: `10.10.0.2`
-- Kaufmann: `10.10.0.10`
-
-## Sicherheit
-
-Private WireGuard-Schlüssel werden nicht im Repository gespeichert.
-
-Der Client Private Key wird ausschließlich über die lokale App-Konfiguration der jeweiligen Home-Assistant-Installation hinterlegt.
-
-## Status
-
-Version 0.2.0
-
-Aktuell:
-- WireGuard Client
-- Split-Tunneling
-- ARM64 und AMD64
-
-Geplant:
-- Handshake-Überwachung
-- Subnet-Routing
-- Diagnose
-- Verbindungsstatus
+Die tatsächlichen Zugangsdaten werden ausschließlich in der
+lokalen Home-Assistant-App-Konfiguration gespeichert.

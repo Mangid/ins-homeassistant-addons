@@ -20,10 +20,10 @@ devices:
 
 options:
   vpn_address: ""
-  endpoint: "13.140.162.147:51820"
-  server_public_key: "5mFj9hg4nEYbR+IRLsXVf6RRFMPBeH77gCnH8jeuOVE="
+  endpoint: ""
+  server_public_key: ""
   client_private_key: ""
-  allowed_ips: "10.10.0.0/24"
+  allowed_ips: ""
   mtu: 1420
   persistent_keepalive: 21
 
