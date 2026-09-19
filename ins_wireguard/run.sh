@@ -1,15 +1,11 @@
 #!/usr/bin/with-contenv bashio
 
-VERSION="0.3.1"
+VERSION="0.3.2"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"
 bashio::log.info " INS-Energietechnik"
 bashio::log.info "=========================================="
-
-# ----------------------------------------------------------
-# Konfiguration einlesen
-# ----------------------------------------------------------
 
 VPN_ADDRESS=$(bashio::config 'vpn_address')
 ENDPOINT=$(bashio::config 'endpoint')
@@ -143,12 +139,16 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
     bashio::log.info "Aktiviere Subnet-Routing"
     bashio::log.info "=========================================="
 
-    # IPv4 Forwarding aktivieren
-    sysctl -w net.ipv4.ip_forward=1 >/dev/null
+    IP_FORWARD=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo "unbekannt")
 
-    # Eventuell vorhandene identische Regeln entfernen
-    # Dadurch entstehen nach einem Neustart keine Duplikate.
+    bashio::log.info "IPv4 Forwarding: ${IP_FORWARD}"
 
+    if [ "${IP_FORWARD}" != "1" ]; then
+        bashio::log.warning "IPv4 Forwarding ist nicht aktiv."
+        bashio::log.warning "Subnet-Routing kann dadurch eingeschränkt sein."
+    fi
+
+    # Alte identische Regeln entfernen
     iptables -D FORWARD \
         -i wg0 \
         -o "${LAN_INTERFACE}" \
@@ -169,16 +169,14 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
         -o "${LAN_INTERFACE}" \
         -j MASQUERADE 2>/dev/null || true
 
-    # INS-VPN -> lokales Kundennetz
-
+    # INS-VPN -> Kundennetz
     iptables -I FORWARD 1 \
         -i wg0 \
         -o "${LAN_INTERFACE}" \
         -d "${LOCAL_SUBNET}" \
         -j ACCEPT
 
-    # Antwortverkehr lokales Kundennetz -> INS-VPN
-
+    # Antwortverkehr Kundennetz -> INS-VPN
     iptables -I FORWARD 1 \
         -i "${LAN_INTERFACE}" \
         -o wg0 \
@@ -187,18 +185,14 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
         --ctstate ESTABLISHED,RELATED \
         -j ACCEPT
 
-    # NAT
-    #
-    # Dadurch benötigen Geräte im Kundennetz keine eigene Route
-    # zurück zum INS-WireGuard-Netz.
-
+    # NAT für INS-Zugriffe ins Kundennetz
     iptables -t nat -I POSTROUTING 1 \
         -s 10.10.0.0/24 \
         -d "${LOCAL_SUBNET}" \
         -o "${LAN_INTERFACE}" \
         -j MASQUERADE
 
-    bashio::log.info "Subnet-Routing erfolgreich eingerichtet."
+    bashio::log.info "Subnet-Routing-Regeln erfolgreich eingerichtet."
 
 fi
 
@@ -220,10 +214,6 @@ bashio::log.info "=========================================="
 
 ip route show | grep -E 'wg0|10\.10\.' || true
 
-# ----------------------------------------------------------
-# Subnet-Routing Status
-# ----------------------------------------------------------
-
 if [ "${SUBNET_ROUTING}" = "true" ]; then
 
     bashio::log.info "=========================================="
@@ -231,7 +221,7 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
     bashio::log.info "=========================================="
 
     bashio::log.info "IPv4 Forwarding:"
-    sysctl net.ipv4.ip_forward || true
+    cat /proc/sys/net/ipv4/ip_forward || true
 
     bashio::log.info "FORWARD Regeln:"
     iptables -L FORWARD -n -v || true
@@ -244,10 +234,6 @@ fi
 bashio::log.info "=========================================="
 bashio::log.info "INS WireGuard Client läuft"
 bashio::log.info "=========================================="
-
-# ----------------------------------------------------------
-# Container aktiv halten
-# ----------------------------------------------------------
 
 while true; do
     sleep 3600
