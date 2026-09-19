@@ -1,0 +1,37 @@
+name: "INS WireGuard Client"
+version: "0.2.0"
+slug: "ins_wireguard"
+description: "WireGuard Client für den zentralen INS-Fernzugriff"
+startup: services
+boot: auto
+init: false
+
+arch:
+  - aarch64
+  - amd64
+
+host_network: true
+
+privileged:
+  - NET_ADMIN
+
+devices:
+  - /dev/net/tun
+
+options:
+  vpn_address: ""
+  endpoint: "13.140.162.147:51820"
+  server_public_key: "5mFj9hg4nEYbR+IRLsXVf6RRFMPBeH77gCnH8jeuOVE="
+  client_private_key: ""
+  allowed_ips: "10.10.0.0/24"
+  mtu: 1420
+  persistent_keepalive: 21
+
+schema:
+  vpn_address: str
+  endpoint: str
+  server_public_key: str
+  client_private_key: password
+  allowed_ips: str
+  mtu: int
+  persistent_keepalive: int

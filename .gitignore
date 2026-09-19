@@ -1,0 +1,20 @@
+# Secrets / Keys
+*.key
+*.pem
+*.conf
+
+# Environment / Secrets
+.env
+.env.*
+secrets.yaml
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
