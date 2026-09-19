@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-VERSION="0.2.4"
+VERSION="0.2.5"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"
@@ -16,7 +16,7 @@ MTU=$(bashio::config 'mtu')
 KEEPALIVE=$(bashio::config 'persistent_keepalive')
 
 if [ -z "${VPN_ADDRESS}" ]; then
-    bashio::log.error "Keine WireGuard VPN-Adresse konfiguriert."
+    bashio::log.error "Keine VPN-Adresse konfiguriert."
     exit 1
 fi
 
@@ -31,7 +31,7 @@ if [ -z "${SERVER_PUBLIC_KEY}" ]; then
 fi
 
 if [ -z "${ENDPOINT}" ]; then
-    bashio::log.error "Kein WireGuard Endpoint konfiguriert."
+    bashio::log.error "Kein Endpoint konfiguriert."
     exit 1
 fi
 
@@ -60,48 +60,38 @@ bashio::log.info "MTU         : ${MTU}"
 bashio::log.info "Keepalive   : ${KEEPALIVE}"
 
 bashio::log.info "=========================================="
-bashio::log.info "Starte Runtime-Diagnose"
+bashio::log.info "Starte WireGuard"
 bashio::log.info "=========================================="
 
-bashio::log.info "TEST 1: Skript läuft nach Konfiguration"
-
-bashio::log.info "TEST 2: Prüfe ip"
-if command -v ip >/dev/null 2>&1; then
-    bashio::log.info "ip gefunden: $(command -v ip)"
-else
-    bashio::log.error "ip nicht gefunden"
+# Eventuell vorhandenes wg0 sauber entfernen
+if ip link show wg0 >/dev/null 2>&1; then
+    bashio::log.warning "wg0 existiert bereits und wird neu gestartet."
+    wg-quick down /etc/wireguard/wg0.conf || true
 fi
 
-bashio::log.info "TEST 3: Prüfe wg"
-if command -v wg >/dev/null 2>&1; then
-    bashio::log.info "wg gefunden: $(command -v wg)"
+if wg-quick up /etc/wireguard/wg0.conf; then
+    bashio::log.info "WireGuard-Interface wg0 erfolgreich gestartet."
 else
-    bashio::log.error "wg nicht gefunden"
+    bashio::log.error "WireGuard konnte nicht gestartet werden."
+    exit 1
 fi
 
-bashio::log.info "TEST 4: Prüfe wg-quick"
-if command -v wg-quick >/dev/null 2>&1; then
-    bashio::log.info "wg-quick gefunden: $(command -v wg-quick)"
-else
-    bashio::log.error "wg-quick nicht gefunden"
-fi
-
-bashio::log.info "TEST 5: Prüfe /dev/net/tun"
-if [ -e /dev/net/tun ]; then
-    bashio::log.info "/dev/net/tun vorhanden"
-else
-    bashio::log.error "/dev/net/tun NICHT vorhanden"
-fi
-
-bashio::log.info "TEST 6: Netzwerk-Interfaces"
-ip link show || true
-
-bashio::log.info "TEST 7: WireGuard-Version"
-wg --version || true
+sleep 3
 
 bashio::log.info "=========================================="
-bashio::log.info "Diagnose abgeschlossen"
-bashio::log.info "WireGuard wird noch nicht gestartet."
+bashio::log.info "WireGuard Status"
+bashio::log.info "=========================================="
+
+wg show wg0 || true
+
+bashio::log.info "=========================================="
+bashio::log.info "Routing"
+bashio::log.info "=========================================="
+
+ip route show | grep -E '10\.10\.0\.0|wg0' || true
+
+bashio::log.info "=========================================="
+bashio::log.info "INS WireGuard Client läuft"
 bashio::log.info "=========================================="
 
 while true; do
