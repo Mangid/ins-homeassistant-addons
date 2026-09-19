@@ -1,12 +1,15 @@
 #!/usr/bin/with-contenv bashio
-set -e
 
-VERSION="0.2.2"
+VERSION="0.2.3"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"
 bashio::log.info " INS-Energietechnik"
 bashio::log.info "=========================================="
+
+# ----------------------------------------------------------
+# Konfiguration einlesen
+# ----------------------------------------------------------
 
 VPN_ADDRESS=$(bashio::config 'vpn_address')
 ENDPOINT=$(bashio::config 'endpoint')
@@ -41,7 +44,7 @@ if [ -z "${ENDPOINT}" ]; then
 fi
 
 # ----------------------------------------------------------
-# WireGuard-Konfiguration erzeugen
+# WireGuard-Konfigurationsdatei erzeugen
 # ----------------------------------------------------------
 
 mkdir -p /etc/wireguard
@@ -62,22 +65,17 @@ EOF
 
 chmod 600 /etc/wireguard/wg0.conf
 
+# ----------------------------------------------------------
+# Konfiguration anzeigen
+# Private Key wird bewusst NICHT ausgegeben
+# ----------------------------------------------------------
+
 bashio::log.info "VPN-Adresse : ${VPN_ADDRESS}"
 bashio::log.info "Endpoint    : ${ENDPOINT}"
 bashio::log.info "Allowed IPs : ${ALLOWED_IPS}"
 bashio::log.info "MTU         : ${MTU}"
+bashio::log.info "Keepalive   : ${KEEPALIVE}"
 
 # ----------------------------------------------------------
-# Eventuell vorhandenes Interface entfernen
-# ----------------------------------------------------------
-
-if ip link show wg0 >/dev/null 2>&1; then
-    bashio::log.warning "Vorhandenes wg0-Interface wird entfernt."
-    wg-quick down wg0 || true
-fi
-
-# ----------------------------------------------------------
-# WireGuard starten
-# ----------------------------------------------------------
-
-bash
+# Runtime-Diagnose
+# ------------------------------------------------
