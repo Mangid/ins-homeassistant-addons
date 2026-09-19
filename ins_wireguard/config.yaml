@@ -1,5 +1,5 @@
 name: "INS WireGuard Client"
-version: "0.2.5"
+version: "0.3.0"
 slug: "ins_wireguard"
 description: "WireGuard Client für den zentralen INS-Fernzugriff"
 startup: services
@@ -26,6 +26,9 @@ options:
   allowed_ips: ""
   mtu: 1420
   persistent_keepalive: 21
+  subnet_routing: false
+  local_subnet: ""
+  lan_interface: "end0"
 
 schema:
   vpn_address: str
@@ -35,3 +38,6 @@ schema:
   allowed_ips: str
   mtu: int
   persistent_keepalive: int
+  subnet_routing: bool
+  local_subnet: str
+  lan_interface: str
