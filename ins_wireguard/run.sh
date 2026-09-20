@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-VERSION="0.3.2"
+VERSION="0.3.3"
 
 bashio::log.info "=========================================="
 bashio::log.info " INS WireGuard Client v${VERSION}"
@@ -18,6 +18,26 @@ KEEPALIVE=$(bashio::config 'persistent_keepalive')
 SUBNET_ROUTING=$(bashio::config 'subnet_routing')
 LOCAL_SUBNET=$(bashio::config 'local_subnet')
 LAN_INTERFACE=$(bashio::config 'lan_interface')
+
+# ----------------------------------------------------------
+# Hilfsfunktionen
+# ----------------------------------------------------------
+
+log_separator() {
+    bashio::log.info "=========================================="
+}
+
+# Erste nutzbare Test-IP aus einem /24-Netz ableiten.
+# Beispiel: 192.168.0.0/24 -> 192.168.0.1
+get_test_ip() {
+    local subnet="$1"
+
+    if echo "${subnet}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.0/24$'; then
+        echo "${subnet}" | sed -E 's/\.0\/24$/.1/'
+    else
+        echo ""
+    fi
+}
 
 # ----------------------------------------------------------
 # Pflichtfelder prüfen
@@ -66,9 +86,40 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
 
     if ! ip link show "${LAN_INTERFACE}" >/dev/null 2>&1; then
         bashio::log.error "LAN-Interface ${LAN_INTERFACE} wurde nicht gefunden."
+
+        bashio::log.info "Verfügbare Interfaces:"
+        ip -br link || true
+
         exit 1
     fi
+fi
 
+# ----------------------------------------------------------
+# Diagnose VOR WireGuard
+# ----------------------------------------------------------
+
+log_separator
+bashio::log.info "System-/Netzwerkdiagnose vor WireGuard"
+log_separator
+
+bashio::log.info "Interfaces:"
+ip -br addr || true
+
+bashio::log.info "Routing-Tabelle:"
+ip route show || true
+
+bashio::log.info "Policy-Routing:"
+ip rule show || true
+
+bashio::log.info "Netzwerk-Namespace:"
+readlink /proc/self/ns/net || true
+
+if [ "${SUBNET_ROUTING}" = "true" ]; then
+    bashio::log.info "LAN-Interface ${LAN_INTERFACE}:"
+    ip addr show dev "${LAN_INTERFACE}" || true
+
+    bashio::log.info "Route zum lokalen Netz ${LOCAL_SUBNET}:"
+    ip route show "${LOCAL_SUBNET}" || true
 fi
 
 # ----------------------------------------------------------
@@ -118,9 +169,9 @@ fi
 # WireGuard starten
 # ----------------------------------------------------------
 
-bashio::log.info "=========================================="
+log_separator
 bashio::log.info "Starte WireGuard"
-bashio::log.info "=========================================="
+log_separator
 
 if wg-quick up /etc/wireguard/wg0.conf; then
     bashio::log.info "WireGuard-Interface wg0 erfolgreich gestartet."
@@ -135,9 +186,9 @@ fi
 
 if [ "${SUBNET_ROUTING}" = "true" ]; then
 
-    bashio::log.info "=========================================="
+    log_separator
     bashio::log.info "Aktiviere Subnet-Routing"
-    bashio::log.info "=========================================="
+    log_separator
 
     IP_FORWARD=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo "unbekannt")
 
@@ -149,25 +200,31 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
     fi
 
     # Alte identische Regeln entfernen
-    iptables -D FORWARD \
+    while iptables -D FORWARD \
         -i wg0 \
         -o "${LAN_INTERFACE}" \
         -d "${LOCAL_SUBNET}" \
-        -j ACCEPT 2>/dev/null || true
+        -j ACCEPT 2>/dev/null; do
+        :
+    done
 
-    iptables -D FORWARD \
+    while iptables -D FORWARD \
         -i "${LAN_INTERFACE}" \
         -o wg0 \
         -s "${LOCAL_SUBNET}" \
         -m conntrack \
         --ctstate ESTABLISHED,RELATED \
-        -j ACCEPT 2>/dev/null || true
+        -j ACCEPT 2>/dev/null; do
+        :
+    done
 
-    iptables -t nat -D POSTROUTING \
+    while iptables -t nat -D POSTROUTING \
         -s 10.10.0.0/24 \
         -d "${LOCAL_SUBNET}" \
         -o "${LAN_INTERFACE}" \
-        -j MASQUERADE 2>/dev/null || true
+        -j MASQUERADE 2>/dev/null; do
+        :
+    done
 
     # INS-VPN -> Kundennetz
     iptables -I FORWARD 1 \
@@ -193,47 +250,87 @@ if [ "${SUBNET_ROUTING}" = "true" ]; then
         -j MASQUERADE
 
     bashio::log.info "Subnet-Routing-Regeln erfolgreich eingerichtet."
-
 fi
 
 # ----------------------------------------------------------
-# Status
+# Diagnose NACH WireGuard
 # ----------------------------------------------------------
 
 sleep 3
 
-bashio::log.info "=========================================="
+log_separator
 bashio::log.info "WireGuard Status"
-bashio::log.info "=========================================="
+log_separator
 
 wg show wg0 || true
 
-bashio::log.info "=========================================="
-bashio::log.info "Routing"
-bashio::log.info "=========================================="
+log_separator
+bashio::log.info "Netzwerkdiagnose nach WireGuard"
+log_separator
 
-ip route show | grep -E 'wg0|10\.10\.' || true
+bashio::log.info "Interfaces:"
+ip -br addr || true
+
+bashio::log.info "Routing-Tabelle:"
+ip route show || true
+
+bashio::log.info "Policy-Routing:"
+ip rule show || true
+
+bashio::log.info "Route zum WireGuard-Server:"
+SERVER_IP=$(echo "${ENDPOINT}" | sed 's/:[0-9]*$//')
+ip route get "${SERVER_IP}" || true
 
 if [ "${SUBNET_ROUTING}" = "true" ]; then
 
-    bashio::log.info "=========================================="
-    bashio::log.info "Subnet-Routing Status"
-    bashio::log.info "=========================================="
+    TEST_IP=$(get_test_ip "${LOCAL_SUBNET}")
+
+    log_separator
+    bashio::log.info "Subnet-Routing Diagnose"
+    log_separator
 
     bashio::log.info "IPv4 Forwarding:"
     cat /proc/sys/net/ipv4/ip_forward || true
 
+    bashio::log.info "wg0:"
+    ip addr show dev wg0 || true
+
+    bashio::log.info "${LAN_INTERFACE}:"
+    ip addr show dev "${LAN_INTERFACE}" || true
+
+    bashio::log.info "Route zum lokalen Netz:"
+    ip route show "${LOCAL_SUBNET}" || true
+
+    if [ -n "${TEST_IP}" ]; then
+        bashio::log.info "Kernel-Route zu Test-IP ${TEST_IP}:"
+        ip route get "${TEST_IP}" || true
+
+        bashio::log.info "Ping zu Test-IP ${TEST_IP}:"
+        ping -c 3 -W 2 "${TEST_IP}" || true
+    else
+        bashio::log.warning "Automatische Test-IP nur für /24-Netze verfügbar."
+    fi
+
     bashio::log.info "FORWARD Regeln:"
-    iptables -L FORWARD -n -v || true
+    iptables -L FORWARD -n -v --line-numbers || true
 
     bashio::log.info "NAT Regeln:"
-    iptables -t nat -L POSTROUTING -n -v || true
+    iptables -t nat -L POSTROUTING -n -v --line-numbers || true
 
+    bashio::log.info "iptables Backend:"
+    iptables --version || true
+
+    if command -v nft >/dev/null 2>&1; then
+        bashio::log.info "nftables ist verfügbar."
+        nft list ruleset 2>/dev/null | head -n 200 || true
+    else
+        bashio::log.info "nft Kommando ist nicht verfügbar."
+    fi
 fi
 
-bashio::log.info "=========================================="
+log_separator
 bashio::log.info "INS WireGuard Client läuft"
-bashio::log.info "=========================================="
+log_separator
 
 while true; do
     sleep 3600
