@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+- Fix Setup Wizard API URLs behind Home Assistant Ingress
+- Fix V1 dashboard API/schema URLs behind Ingress
+
 ## 0.1.1
 - Force rebuild against current INS-EI Core
 - Log discovered plugin manifests during startup
