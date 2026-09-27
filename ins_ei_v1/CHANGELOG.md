@@ -1,0 +1,9 @@
+# Changelog
+
+## 0.1.0
+- First INS-EI V1 Home Assistant App package
+- First-run browser Setup Wizard
+- Persistent /data Site/Historian
+- Ingress Web UI
+- Direct ÖkoFEN, my-PV, SHRDZM and Victron GX plugin foundation
+- Learning/Shadow default-deny autonomy architecture
