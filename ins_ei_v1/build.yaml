@@ -4,4 +4,4 @@ build_from:
 
 args:
   INS_EI_CORE_REF: "main"
-  INS_EI_CORE_BUILD: "0.1.9"
+  INS_EI_CORE_BUILD: "0.1.10"
