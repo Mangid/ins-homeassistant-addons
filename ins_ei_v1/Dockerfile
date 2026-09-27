@@ -1,11 +1,18 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
+ARG INS_EI_CORE_REF=main
+ARG INS_EI_CORE_BUILD=dev
+
 RUN apk add --no-cache python3 py3-pip git bash
 
 WORKDIR /opt/ins-ei
 
-RUN git clone --depth 1 https://github.com/Mangid/ins-ei-core.git /opt/ins-ei/core \
+RUN echo "Building INS-EI Core ref=${INS_EI_CORE_REF} build=${INS_EI_CORE_BUILD}" \
+    && git clone https://github.com/Mangid/ins-ei-core.git /opt/ins-ei/core \
+    && cd /opt/ins-ei/core \
+    && git checkout "${INS_EI_CORE_REF}" \
+    && git rev-parse HEAD > /opt/ins-ei/core/.ins-ei-core-sha \
     && python3 -m pip install --break-system-packages --no-cache-dir /opt/ins-ei/core
 
 COPY run.sh /run.sh
