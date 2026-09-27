@@ -1,5 +1,5 @@
 name: "INS-EI V1"
-version: "0.1.4"
+version: "0.1.5"
 slug: "ins_ei_v1"
 description: "INS-EI V1 – selbstlernende Energie- und Anlagenintelligenz"
 startup: services
