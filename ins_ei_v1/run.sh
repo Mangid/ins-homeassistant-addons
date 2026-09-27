@@ -14,6 +14,7 @@ PY
 SITE="/data/site.yaml"
 
 echo "INS-EI V1 starting"
+echo "Core SHA: $(cat /opt/ins-ei/core/.ins-ei-core-sha 2>/dev/null || echo unknown)"
 echo "Persistent data: /data"
 echo "Collection interval: ${INTERVAL}s"
 echo "Plugin manifests:"
