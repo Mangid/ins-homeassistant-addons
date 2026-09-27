@@ -1,0 +1,24 @@
+name: "INS-EI V1"
+version: "0.1.0"
+slug: "ins_ei_v1"
+description: "INS-EI V1 – selbstlernende Energie- und Anlagenintelligenz"
+startup: services
+boot: auto
+init: false
+
+arch:
+  - aarch64
+  - amd64
+
+host_network: true
+
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:brain
+panel_title: "INS-EI V1"
+
+options:
+  interval_seconds: 10
+
+schema:
+  interval_seconds: int(1,300)
