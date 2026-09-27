@@ -16,6 +16,8 @@ SITE="/data/site.yaml"
 echo "INS-EI V1 starting"
 echo "Persistent data: /data"
 echo "Collection interval: ${INTERVAL}s"
+echo "Plugin manifests:"
+find /opt/ins-ei/core/plugins -maxdepth 2 -name manifest.yaml -print || true
 
 exec ins-ei \
   --site "${SITE}" \
