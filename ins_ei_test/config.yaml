@@ -1,5 +1,5 @@
 name: "INS-EI TEST"
-version: "0.1.0-dev.10"
+version: "0.1.0-dev.11"
 slug: "ins_ei_test"
 description: "INS-EI Entwicklungs- und Testinstanz – nicht für Produktivbetrieb"
 startup: services
@@ -18,6 +18,8 @@ panel_title: "INS-EI TEST"
 
 options:
   interval_seconds: 10
+  timezone: Europe/Vienna
 
 schema:
   interval_seconds: int(1,300)
+  timezone: str
