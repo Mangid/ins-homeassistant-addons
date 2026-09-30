@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.37
+- Forces a fresh TEST image from Core main after Huawei Solar merge
+- Expected Core SHA starts with b60727f
+- Includes generic read-only Huawei Solar plugin
+
 ## 0.1.0-dev.36
 - Generic read-only Huawei Solar Modbus TCP plugin
 - SUN2000 model discovery and multiple inverter Unit IDs
