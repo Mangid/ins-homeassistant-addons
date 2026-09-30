@@ -2,11 +2,12 @@ ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 ARG INS_EI_CORE_REF=b60727f2a6589b69487a7840c1ae3b1a431820d2
-ARG INS_EI_CORE_BUILD=test
+ARG INS_EI_CORE_BUILD=dev39-b60727f
 
 RUN apk add --no-cache python3 py3-pip git bash
 WORKDIR /opt/ins-ei
 RUN echo "Building INS-EI TEST Core ref=${INS_EI_CORE_REF} build=${INS_EI_CORE_BUILD}" \
+    && echo "${INS_EI_CORE_BUILD}" > /tmp/ins-ei-build-key \
     && git clone https://github.com/Mangid/ins-ei-core.git /opt/ins-ei/core \
     && cd /opt/ins-ei/core \
     && git checkout "${INS_EI_CORE_REF}" \
