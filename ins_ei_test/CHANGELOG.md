@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.38
+- Pin TEST build to Core b60727f (Huawei Solar)
+- Prevent stale Docker layer from reusing an older Core main checkout
+- Huawei Solar manifest must be present in the built image
+
 ## 0.1.0-dev.37
 - Forces a fresh TEST image from Core main after Huawei Solar merge
 - Expected Core SHA starts with b60727f
