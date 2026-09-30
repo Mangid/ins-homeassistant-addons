@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-ARG INS_EI_CORE_REF=main
+ARG INS_EI_CORE_REF=b60727f2a6589b69487a7840c1ae3b1a431820d2
 ARG INS_EI_CORE_BUILD=test
 
 RUN apk add --no-cache python3 py3-pip git bash
