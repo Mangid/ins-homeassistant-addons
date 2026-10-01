@@ -3,5 +3,5 @@ build_from:
   amd64: "ghcr.io/home-assistant/amd64-base:3.22"
 
 args:
-  INS_EI_CORE_REF: "3c0238567fe81bf90f4a9d75f481a886ad65ae1f"
-  INS_EI_CORE_BUILD: "dev42-3c02385"
+  INS_EI_CORE_REF: "5fa7d2790a5be77c5e796fcc8eea901cc78a5958"
+  INS_EI_CORE_BUILD: "dev43-5fa7d27"
