@@ -1,8 +1,8 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-ARG INS_EI_CORE_REF=c1a8fbf21bd251a8d4c4b6242afad44c8d75e334
-ARG INS_EI_CORE_BUILD=dev47-c1a8fbf
+ARG INS_EI_CORE_REF=5f6db98af849d7810f58e5307cecbb1a9aaa9c7b
+ARG INS_EI_CORE_BUILD=dev48-5f6db98
 
 RUN apk add --no-cache python3 py3-pip git bash
 WORKDIR /opt/ins-ei
