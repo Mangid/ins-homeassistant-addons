@@ -1,5 +1,5 @@
 name: "INS-EI TEST"
-version: "0.1.0-dev.70"
+version: "0.1.0-dev.71"
 slug: "ins_ei_test"
 description: "INS-EI Entwicklungs- und Testinstanz – nicht für Produktivbetrieb"
 startup: services
